@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>โลกของสิงหไกรภพ — Interactive Digital E-Book</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Charmonman:wght@700&family=Noto+Serif+Thai:wght@400;500;600;700&family=Prompt:wght@300;400;500;600&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --paper-bg: #fbf6eb;
+      --paper-edge: #efe4cf;
+      --paper-ink: #2b2118;
+      --paper-muted: #6b5844;
+      --paper-border: rgba(146, 112, 68, 0.25);
+      --spine-shadow: rgba(34, 21, 9, 0.22);
+      --desk-bg: radial-gradient(circle at 50% 25%, #231a14 0%, #140f0c 70%, #0b0806 100%);
+    }
+
+    /* โหมดอ่านกลางคืน (Night Reading Mode) */
+    body.night-mode {
+      --paper-bg: #171922;
+      --paper-edge: #11131a;
+      --paper-ink: #ece6d8;
+      --paper-muted: #a69d8e;
+      --paper-border: rgba(212, 175, 55, 0.22);
+      --spine-shadow: rgba(0, 0, 0, 0.55);
+      --desk-bg: radial-gradient(circle at 50% 25%, #0e1118 0%, #07090d 100%);
+    }
+
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: var(--desk-bg);
+      color: #f8fafc;
+      min-height: 100vh;
+      margin: 0;
+      overflow-x: hidden;
+      transition: background 0.5s ease;
+    }
+
+    .font-serif-thai {
+      font-family: 'Noto Serif Thai', serif;
+    }
+
+    .font-display {
+      font-family: 'Prompt', sans-serif;
+    }
+
+    .font-thai-classic {
+      font-family: 'Charmonman', cursive;
+    }
+
+    /* พื้นผิวหน้ากระดาษหนังสือ */
+    .book-paper {
+      background-color: var(--paper-bg);
+      background-image:
+        radial-gradient(rgba(160, 125, 78, 0.06) 1px, transparent 0),
+        linear-gradient(to right, rgba(0,0,0,0.03), transparent 8%, transparent 92%, rgba(0,0,0,0.04));
+      background-size: 20px 20px, 100% 100%;
+      color: var(--paper-ink);
+      transition: background-color 0.45s ease, color 0.45s ease;
+    }
+
+    /* สันหนังสือตรงกลาง (Book Spine Gutter Shadow) */
+    @media (min-width: 1024px) {
+      .left-page-shadow {
+        box-shadow: inset -18px 0 28px -12px var(--spine-shadow);
+      }
+      .right-page-shadow {
+        box-shadow: inset 18px 0 28px -12px var(--spine-shadow);
+      }
+    }
+
+    /* แอนิเมชันพลิกหน้าหนังสือ (Page Flip) */
+    @keyframes flipNext {
+      0% {
+        opacity: 0.25;
+        transform: perspective(1600px) rotateY(-14deg) scale(0.985);
+      }
+      100% {
+        opacity: 1;
+        transform: perspective(1600px) rotateY(0deg) scale(1);
+      }
+    }
+
+    @keyframes flipPrev {
+      0% {
+        opacity: 0.25;
+        transform: perspective(1600px) rotateY(14deg) scale(0.985);
+      }
+      100% {
+        opacity: 1;
+        transform: perspective(1600px) rotateY(0deg) scale(1);
+      }
+    }
+
+    .animate-flip-next {
+      animation: flipNext 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .animate-flip-prev {
+      animation: flipPrev 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    /* เอฟเฟกต์แสงคลี่คลายอารมณ์ในเล่ม (ฉาก 07 -> 08) */
+    @keyframes pageLightReveal {
+      0% { opacity: 0.85; }
+      100% { opacity: 0; }
+    }
+    .page-flare {
+      animation: pageLightReveal 1.1s ease-out forwards;
+    }
+
+    /* จุดหมุดกดสำรวจบนภาพประกอบ */
+    @keyframes pinPulse {
+      0% { transform: scale(0.9); opacity: 0.85; }
+      75% { transform: scale(1.7); opacity: 0; }
+      100% { transform: scale(1.7); opacity: 0; }
+    }
+    .pin-pulse::before {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 9999px;
+      border: 2px solid currentColor;
+      animation: pinPulse 2s infinite ease-out;
+    }
+
+    /* ตัวอักษรตัวแรกขนาดใหญ่แบบหนังสือวรรณคดี (Drop Cap) */
+    .story-dropcap::first-letter {
+      float: left;
+      font-family: 'Noto Serif Thai', serif;
+      font-size: 3.1rem;
+      line-height: 0.88;
+      padding-right: 0.65rem;
+      padding-top: 0.2rem;
+      font-weight: 700;
+      color: #b45309;
+    }
+    body.night-mode .story-dropcap::first-letter {
+      color: #fbbf24;
+    }
+
+    /* สันปกหนังสือแข็ง (Hardcover Spine) */
+    .hardcover-book {
+      background: linear-gradient(135deg, #0d1f33 0%, #142c47 45%, #091524 100%);
+      box-shadow:
+        -10px 14px 30px rgba(0, 0, 0, 0.65),
+        inset 14px 0 22px rgba(0, 0, 0, 0.55),
+        inset 2px 0 0 rgba(251, 191, 36, 0.35);
+    }
+
+    /* ภาพประกอบจริงสำหรับอิบุ๊ก */
+    .chapter-art-shell { position: relative; aspect-ratio: 460 / 300; min-height: 220px; }
+    .chapter-art-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+    .chapter-art-shell > svg { display: none !important; }
+    .chapter-art-shell > button { z-index: 2; }
+    .cover-art { object-fit: cover; object-position: center 38%; }
+
+    /* Mobile-friendly reader layout */
+    @media (max-width: 640px) {
+      body { min-height: 100dvh; }
+      header { padding-top: env(safe-area-inset-top); }
+      header > div { padding-left: 10px !important; padding-right: 10px !important; }
+      main, main > section { padding-left: 8px !important; padding-right: 8px !important; }
+      #book-cover-view { width: calc(100% - 16px) !important; }
+      #open-book-view { width: 100% !important; }
+      #open-book-view > div:first-child { padding: 4px !important; border-radius: 12px !important; }
+      #book-spread-container { display: flex !important; flex-direction: column !important; }
+      #book-spread-container > div { padding: 14px !important; }
+      #book-illustration-frame { padding: 5px !important; border-radius: 10px !important; }
+      .chapter-art-shell { aspect-ratio: 4 / 3; min-height: 0; max-height: 42dvh; }
+      .chapter-art-photo { object-fit: cover; }
+      #illustration-caption { font-size: 11px !important; line-height: 1.55; }
+      #right-page-th-title { font-size: 1.35rem !important; }
+      #right-page-narrative { font-size: 17px !important; line-height: 1.85 !important; }
+      #right-page-interactions button, #right-page-next-area button,
+      #prev-page-btn, #bottom-page-pills button, #open-book-view button {
+        min-height: 42px;
+        touch-action: manipulation;
+      }
+      #right-page-interactions button { padding: 10px 12px !important; }
+      #prev-page-btn { padding: 8px 10px !important; }
+      #bottom-page-pills { gap: 5px !important; }
+      #bottom-page-pills button { padding: 7px 10px !important; }
+      #note-modal { padding: 10px !important; }
+      #note-modal > div { max-height: 88dvh; overflow-y: auto; }
+      #note-modal-body { font-size: 16px !important; line-height: 1.8 !important; }
+    }
+    @media (max-width: 380px) {
+      #right-page-narrative { font-size: 16px !important; }
+      #right-page-th-title { font-size: 1.2rem !important; }
+      #right-page-next-area { flex-wrap: wrap; justify-content: flex-end; }
+      #left-page-number, #right-page-number { font-size: 10px; }
+    }
+
+  </style>
+</head>
+<body class="flex flex-col justify-between selection:bg-amber-400/30">
+
+  <!-- ==================== แถบเครื่องมือด้านบนของ E-Book Reader ==================== -->
+  <header class="w-full border-b border-amber-200/10 bg-black/40 backdrop-blur-md sticky top-0 z-30">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-2">
+      <!-- ปุ่มกลับหน้าปกหนังสือ -->
+      <button onclick="goToPage(0)" class="flex items-center gap-2 text-left group focus:outline-none">
+        <span class="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-400/30 flex items-center justify-center text-amber-300 group-hover:bg-amber-500/25 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+          </svg>
+        </span>
+        <div>
+          <span class="block text-[11px] font-display tracking-wider text-amber-300/80 uppercase">Interactive E-Book</span>
+          <span class="block text-sm font-serif-thai font-semibold text-amber-50">โลกของสิงหไกรภพ</span>
+        </div>
+      </button>
+
+      <!-- ตัวบอกสถานะบทและเครื่องมืออ่าน -->
+      <div class="flex items-center gap-2">
+        <span id="header-chapter-status" class="hidden md:inline-block px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-display text-amber-100/80">
+          หน้าปกหนังสือ
+        </span>
+
+        <!-- ปุ่มสลับโหมดกระดาษถนอมสายตา / โหมดอ่านกลางคืน -->
+        <button id="theme-toggle-btn" onclick="toggleReadingTheme()" title="สลับโหมดกระดาษ / โหมดอ่านกลางคืน" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-display text-amber-100 flex items-center gap-1.5 transition">
+          <span id="theme-icon">🌙</span>
+          <span id="theme-label" class="hidden sm:inline">โหมดกลางคืน</span>
+        </button>
+
+        <!-- ปุ่มเปิดสารบัญบท (ที่คั่นหนังสือ) -->
+        <button onclick="toggleTocModal(true)" class="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/35 text-xs font-display text-amber-200 flex items-center gap-1.5 transition">
+          <svg class="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+          </svg>
+          <span>สารบัญบท</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== พื้นที่วางหนังสือ (Book Desk Stage) ==================== -->
+  <main class="flex-1 flex flex-col items-center justify-center px-3 sm:px-6 py-5 sm:py-8">
+
+    <!-- ==================== 1. หน้าปกหนังสือ (FRONT COVER : Page 0) ==================== -->
+    <section id="book-cover-view" class="w-full max-w-md mx-auto animate-flip-next">
+      <div class="hardcover-book relative rounded-r-3xl rounded-l-lg border-2 border-amber-400/45 p-6 sm:p-8 text-center overflow-hidden">
+        <!-- เส้นสันปกด้านซ้าย -->
+        <div class="absolute inset-y-0 left-0 w-5 bg-gradient-to-r from-black/55 via-amber-500/15 to-transparent border-r border-amber-300/20"></div>
+        <!-- กรอบทองด้านในปก -->
+        <div class="relative rounded-2xl border border-amber-300/35 p-5 sm:p-6 bg-slate-950/35 backdrop-blur-xs space-y-5">
+          <div class="inline-block px-3 py-1 rounded-full border border-amber-300/35 bg-amber-400/10 text-amber-200 text-[11px] font-display tracking-widest uppercase">
+            Interactive Digital Storybook
+          </div>
+
+          <!-- ชื่อหนังสือบนปก -->
+          <div class="space-y-1">
+            <p class="text-xs font-serif-thai text-amber-200/80">วรรณคดีผจญภัยฉบับอีบุ๊กโต้ตอบ</p>
+            <h1 class="font-thai-classic text-4xl sm:text-5xl text-amber-300 drop-shadow-[0_2px_10px_rgba(251,191,36,0.35)] leading-tight">
+              โลกของสิงหไกรภพ
+            </h1>
+          </div>
+
+          <!-- ภาพประกอบหน้าปก -->
+          <div class="relative rounded-xl overflow-hidden border border-amber-300/30 shadow-inner bg-slate-950">
+            <img src="assets/cover-art.png" alt="ภาพปกโลกของสิงหไกรภพ" class="w-full aspect-[400/260] object-cover block" />
+          </div>
+
+          <p class="text-xs sm:text-sm font-serif-thai text-amber-100/85 leading-relaxed">
+            “เรื่องราวการเดินทางของเจ้าชายผู้พลัดพราก เพื่อตามหาความจริงของชาติกำเนิด ความรัก และความหมายของครอบครัว”
+          </p>
+
+          <!-- ปุ่มเปิดหนังสือเริ่มอ่าน -->
+          <div class="pt-1">
+            <button onclick="goToPage(1, 'next')" class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-display font-semibold text-sm sm:text-base shadow-lg shadow-amber-500/25 active:scale-98 transition flex items-center justify-center gap-2">
+              <span>เปิดหนังสือเริ่มอ่าน</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+            </button>
+          </div>
+
+          <p class="text-[11px] font-display text-amber-300/60">
+            ทั้งหมด 9 บท · กดจุดบนภาพประกอบเพื่อเปิดอ่านเกร็ดเรื่องราว
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 2. ตัวเล่มหนังสือเปิดกาง 2 หน้า (OPEN TWO-PAGE SPREAD) ==================== -->
+    <section id="open-book-view" class="hidden w-full max-w-6xl mx-auto">
+      <!-- ขอบปกแข็งรองรับด้านหลังหน้ากระดาษ -->
+      <div class="relative rounded-2xl sm:rounded-3xl p-1.5 sm:p-2.5 bg-gradient-to-b from-amber-900/60 via-stone-900 to-amber-950/80 border border-amber-400/25 shadow-[0_24px_60px_rgba(0,0,0,0.75)]">
+
+        <!-- ที่คั่นหนังสือริบบิ้นสีแดงทองด้านบน -->
+        <div class="hidden sm:flex absolute -top-2 right-12 z-20 flex-col items-center pointer-events-none">
+          <div class="w-6 h-10 bg-gradient-to-b from-red-700 to-red-900 border-x border-amber-300/40 shadow-md" style="clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);"></div>
+        </div>
+
+        <!-- เลเยอร์แสงวาบคลี่คลายอารมณ์ในเล่ม -->
+        <div id="book-flare-layer" class="hidden absolute inset-2 rounded-2xl bg-amber-100 pointer-events-none z-20"></div>
+
+        <!-- คอนเทนเนอร์หน้าคู่ (Left Page + Spine + Right Page) -->
+        <div id="book-spread-container" class="relative grid grid-cols-1 lg:grid-cols-2 rounded-xl sm:rounded-2xl overflow-hidden">
+
+          <!-- เส้นสันกลางหนังสือ (Center Spine Line บนจอใหญ่) -->
+          <div class="hidden lg:block absolute inset-y-0 left-1/2 -translate-x-1/2 w-6 bg-gradient-to-r from-transparent via-black/25 to-transparent pointer-events-none z-10"></div>
+
+          <!-- ==================== หน้าซ้าย (LEFT PAGE : ภาพประกอบฉาก + จุดโต้ตอบ) ==================== -->
+          <div class="book-paper left-page-shadow p-5 sm:p-8 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-amber-900/20">
+            <!-- หัวกระดาษหน้าซ้าย -->
+            <div class="flex items-center justify-between text-xs font-display pb-3 border-b" style="border-color: var(--paper-border); color: var(--paper-muted);">
+              <span id="left-page-running-head">โลกของสิงหไกรภพ</span>
+              <span id="left-page-mood-tag" class="px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-700/20 text-[11px]">
+                ภาพประกอบประจำบท
+              </span>
+            </div>
+
+            <!-- กรอบภาพประกอบของหน้าหนังสือ -->
+            <div class="my-4 sm:my-5 flex-1 flex flex-col items-center justify-center">
+              <div id="book-illustration-frame" class="w-full rounded-2xl p-2.5 border shadow-inner bg-amber-950/5" style="border-color: var(--paper-border);">
+                <!-- ภาพ SVG และปุ่ม Hotspot ของแต่ละฉากจะถูกแสดงที่นี่ -->
+              </div>
+              <p id="illustration-caption" class="mt-2.5 text-center text-xs font-serif-thai italic" style="color: var(--paper-muted);">
+                แตะที่จุดเรืองแสงบนภาพเพื่อเปิดอ่านบันทึกประกอบ
+              </p>
+            </div>
+
+            <!-- ท้ายกระดาษหน้าซ้าย (เลขหน้าคู่ฝั่งซ้าย + ปุ่มย้อนกลับ) -->
+            <div class="pt-3 border-t flex items-center justify-between text-xs font-display" style="border-color: var(--paper-border); color: var(--paper-muted);">
+              <button id="prev-page-btn" onclick="prevPage()" class="px-3 py-1.5 rounded-lg hover:bg-amber-900/10 transition flex items-center gap-1 font-medium">
+                <span>← พลิกกลับหน้าก่อน</span>
+              </button>
+              <span id="left-page-number" class="font-serif-thai">หน้า 1</span>
+            </div>
+          </div>
+
+          <!-- ==================== หน้าขวา (RIGHT PAGE : เนื้อเรื่องหลัก + เกร็ดข้อมูล + พลิกหน้าถัดไป) ==================== -->
+          <div class="book-paper right-page-shadow p-5 sm:p-8 flex flex-col justify-between">
+            <!-- หัวกระดาษหน้าขวา -->
+            <div class="flex items-center justify-between text-xs font-display pb-3 border-b" style="border-color: var(--paper-border); color: var(--paper-muted);">
+              <span id="right-page-chapter-code" class="font-semibold tracking-wider text-amber-800 dark:text-amber-400">บทที่ 01 · SCENE 01</span>
+              <span id="right-page-en-title" class="uppercase tracking-widest text-[11px]">Opening</span>
+            </div>
+
+            <!-- เนื้อหาหลักของหน้าหนังสือ -->
+            <div class="my-4 sm:my-5 flex-1 flex flex-col justify-between space-y-5">
+              <div class="space-y-4">
+                <!-- ชื่อบทภาษาไทย -->
+                <div>
+                  <h2 id="right-page-th-title" class="font-serif-thai text-2xl sm:text-3xl font-bold leading-snug">
+                    โลกของสิงหไกรภพ
+                  </h2>
+                  <!-- ลวดลายเส้นคั่นแบบหนังสือวรรณคดี -->
+                  <div class="flex items-center gap-2 mt-2 opacity-60">
+                    <span class="h-px flex-1 bg-amber-700/40"></span>
+                    <span class="text-amber-700 text-xs">❖</span>
+                    <span class="h-px flex-1 bg-amber-700/40"></span>
+                  </div>
+                </div>
+
+                <!-- ย่อหน้าเนื้อเรื่องหลัก -->
+                <p id="right-page-narrative" class="story-dropcap font-serif-thai text-lg sm:text-[20px] leading-[1.9] tracking-normal">
+                  ณ ดินแดนแห่งหนึ่ง มีเรื่องราวการผจญภัยของเจ้าชายผู้ต้องออกเดินทางเพื่อตามหาตัวตนและครอบครัวของตนเอง
+                </p>
+
+                <!-- หมายเหตุการเปลี่ยนฉาก (Transition Note) -->
+                <div class="px-3.5 py-2 rounded-xl bg-amber-900/5 border text-xs font-display flex items-center gap-2" style="border-color: var(--paper-border); color: var(--paper-muted);">
+                  <span>✦</span>
+                  <span id="right-page-transition">ค่อย ๆ เปิดฉากเข้าสู่เรื่องราว</span>
+                </div>
+              </div>
+
+              <!-- ส่วนปุ่มเปิดอ่านเกร็ดข้อมูล / ตัวละคร / แผนที่ในหน้านี้ -->
+              <div class="space-y-2 pt-2">
+                <p class="text-[11px] font-display uppercase tracking-wider font-semibold" style="color: var(--paper-muted);">
+                  บันทึกเพิ่มเติมในหน้านี้ (คลิกเพื่อเปิดอ่าน)
+                </p>
+                <div id="right-page-interactions" class="flex flex-col gap-2">
+                  <!-- สร้างปุ่มจากข้อมูลของแต่ละฉาก -->
+                </div>
+              </div>
+            </div>
+
+            <!-- ท้ายกระดาษหน้าขวา (เลขหน้าคู่ฝั่งขวา + ปุ่มพลิกหน้าถัดไป) -->
+            <div class="pt-3 border-t flex items-center justify-between gap-2 text-xs font-display" style="border-color: var(--paper-border);">
+              <span id="right-page-number" class="font-serif-thai" style="color: var(--paper-muted);">หน้า 2</span>
+              <div id="right-page-next-area" class="flex items-center gap-2">
+                <!-- ปุ่มพลิกไปหน้าถัดไป หรือปุ่มจบเล่ม -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- แถบตัวเลขหน้าด้านล่างหนังสือ (Quick Page Stepper) -->
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-1.5">
+        <button onclick="goToPage(0)" class="px-2.5 py-1 rounded-md text-xs font-display bg-white/10 hover:bg-white/20 text-amber-200 transition">
+          ปก
+        </button>
+        <div id="bottom-page-pills" class="flex flex-wrap items-center justify-center gap-1">
+          <!-- ปุ่มบทที่ 1 - 9 -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== POP-UP การ์ดบันทึกแทรกในหนังสือ (Book Note Overlay) ==================== -->
+  <div id="note-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-xs" role="dialog" aria-modal="true" aria-labelledby="note-modal-title">
+    <div class="book-paper w-full max-w-lg rounded-2xl border-2 border-amber-700/40 shadow-2xl overflow-hidden">
+      <!-- หัวกระดาษโน้ต -->
+      <div class="px-6 py-4 bg-amber-900/10 border-b flex items-center justify-between gap-3" style="border-color: var(--paper-border);">
+        <span id="note-modal-badge" class="px-3 py-0.5 rounded-full text-xs font-display font-semibold bg-amber-600/15 text-amber-800 dark:text-amber-300 border border-amber-700/25">
+          บันทึกตัวละคร
+        </span>
+        <button onclick="closeNoteModal()" class="w-8 h-8 rounded-full hover:bg-amber-900/15 flex items-center justify-center transition" aria-label="ปิดบันทึก">
+          ✕
+        </button>
+      </div>
+
+      <!-- เนื้อหากระดาษโน้ต -->
+      <div class="p-6 space-y-3.5 max-h-[68vh] overflow-y-auto">
+        <h3 id="note-modal-title" class="font-serif-thai text-xl sm:text-2xl font-bold">
+          หัวข้อบันทึก
+        </h3>
+        <div id="note-modal-body" class="font-serif-thai text-base sm:text-lg leading-relaxed space-y-3">
+          <!-- ข้อความ -->
+        </div>
+
+        <!-- แท็บสลับอ่านหัวข้ออื่นในบทเดียวกัน -->
+        <div id="note-modal-tabs" class="hidden pt-3 border-t flex flex-wrap gap-1.5" style="border-color: var(--paper-border);"></div>
+      </div>
+
+      <!-- ท้ายกระดาษโน้ต -->
+      <div class="px-6 py-3 bg-amber-900/5 border-t flex justify-end" style="border-color: var(--paper-border);">
+        <button onclick="closeNoteModal()" class="px-5 py-2 rounded-xl bg-amber-700 hover:bg-amber-600 text-amber-50 font-display text-xs sm:text-sm font-medium transition">
+          เก็บใบบันทึก · กลับสู่หน้าหนังสือ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL สารบัญบท (Table of Contents) ==================== -->
+  <div id="toc-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-xs" role="dialog" aria-modal="true">
+    <div class="book-paper w-full max-w-2xl rounded-2xl border-2 border-amber-700/40 shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 bg-amber-900/10 border-b flex items-center justify-between" style="border-color: var(--paper-border);">
+        <div>
+          <p class="text-[11px] font-display uppercase tracking-wider text-amber-700 dark:text-amber-400">Table of Contents</p>
+          <h3 class="font-serif-thai text-lg sm:text-xl font-bold">สารบัญบท · โลกของสิงหไกรภพ</h3>
+        </div>
+        <button onclick="toggleTocModal(false)" class="w-8 h-8 rounded-full hover:bg-amber-900/15 flex items-center justify-center transition">
+          ✕
+        </button>
+      </div>
+      <div id="toc-grid" class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[70vh] overflow-y-auto">
+        <!-- รายการบท -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // ข้อมูลเนื้อหาอีบุ๊กทั้ง 9 บท (Scene 01 – 09) ตาม Storyboard
+    // =========================================================================
+    const bookChapters = [
+      {
+        chapter: 1,
+        enTitle: 'Opening',
+        thTitle: 'โลกของสิงหไกรภพ',
+        moodTag: 'ป่าแฟนตาซีและเงาเจ้าชาย',
+        caption: 'ภาพป่าแฟนตาซีและเงาของสิงหไกรภพ พร้อมชื่อเรื่อง',
+        narrative: 'ณ ดินแดนแห่งหนึ่ง มีเรื่องราวการผจญภัยของเจ้าชายผู้ต้องออกเดินทางเพื่อตามหาตัวตนและครอบครัวของตนเอง',
+        transition: 'ค่อย ๆ เปิดฉากเข้าสู่เรื่องราว',
+        nextBtnLabel: 'เริ่มต้นการเดินทาง',
+        notes: [
+          {
+            btnLabel: 'อ่านคำนำและเกร็ดเปิดเรื่อง',
+            badge: 'คำนำ · โลกของสิงหไกรภพ',
+            title: 'จุดเริ่มต้นแห่งการเดินทางตามหาตัวตน',
+            paragraphs: [
+              '“โลกของสิงหไกรภพ” คือเรื่องราวการผจญภัยของเจ้าชายผู้พลัดพรากจากบ้านเกิดตั้งแต่เยาว์วัย',
+              'ผู้อ่านสามารถพลิกเปิดทีละหน้า และกดที่จุดสัญลักษณ์บนภาพประกอบเพื่อเปิดอ่านประวัติตัวละคร แผนที่ และเกร็ดสำคัญประจำแต่ละบทได้ตลอดเล่ม'
+            ]
+          }
+        ],
+        renderIllustration: () => `
+          <div class="relative rounded-xl overflow-hidden bg-slate-950">
+            <svg viewBox="0 0 460 300" class="w-full h-auto block">
+              <defs>
+                <radialGradient id="ch1Moon" cx="50%" cy="42%" r="50%">
+                  <stop offset="0%" stop-color="#fef3c7" stop-opacity="0.9" />
+                  <stop offset="60%" stop-color="#14b8a6" stop-opacity="0.22" />
+                  <stop offset="100%" stop-color="#04131a" stop-opacity="0" />
+                </radialGradient>
+              </defs>
+              <rect width="460" height="300" fill="#05161f" />
+              <circle cx="230" cy="130" r="125" fill="url(#ch1Moon)" />
+              <circle cx="230" cy="122" r="42" fill="#fef3c7" opacity="0.9" />
+              <path d="M0,220 Q120,165 240,210 T460,192 L460,300 L0,300 Z" fill="#0c353b" />
+              <path d="M0,248 Q165,212 315,248 T460,235 L460,300 L0,300 Z" fill="#062026" />
+              <!-- เงาสิงหไกรภพ -->
+              <g transform="translate(216, 162)">
+                <circle cx="14" cy="9" r="6.5" fill="#020b10" />
+                <path d="M7,18 L21,18 L24,46 L18,70 L14,70 L14,48 L10,70 L6,70 L6,46 Z" fill="#020b10" />
+                <path d="M9,20 Q-7,36 -11,55 Q2,50 11,43 Z" fill="#f59e0b" opacity="0.85" />
+              </g>
+              <text x="230" y="282" text-anchor="middle" fill="#fde68a" font-family="Noto Serif Thai, serif" font-size="14" letter-spacing="2">โลกของสิงหไกรภพ</text>
+            </svg>
+            <button onclick="openNoteModal(0)" class="pin-pulse absolute left-1/2 top-[56%] -translate-x-1/2 -translate-y-1/2 px-3 py-1 rounded-full bg-amber-300 text-slate-950 font-display text-xs font-semibold shadow-lg">
+              ✦ คำนำเรื่อง
+            </button>
+          </div>
+        `
+      },
+      {
+        chapter: 2,
+        enTitle: 'The Beginning',
+        thTitle: 'จุดเริ่มต้นของเรื่องราว',
+        moodTag: 'เมืองโกญจาและพระราชวัง',
+        caption: 'เมืองโกญจา พระราชวัง ท้าวอินณุมาศและนางจันทรแก้วกัลยาณี',
+        narrative: 'ท้าวอินณุมาศและนางจันทรแก้วกัลยาณีต้องเผชิญกับการกบฏของคงคาประลัย ทำให้ทั้งสองต้องหลบหนีออกจากเมืองไปอาศัยอยู่ในป่า',
+        transition: 'ภาพเมืองค่อย ๆ เปลี่ยนเป็นป่า',
+        notes: [
+          {
+            btnLabel: 'ดูข้อมูลเมืองโกญจา',
+            badge: 'สถานที่ · เมืองโกญจา',
+            title: 'เมืองโกญจา · พระราชวังแห่งจุดเริ่มต้น',
+            paragraphs: [
+              'เมืองโกญจาเป็นราชธานีอันสงบสุขของท้าวอินณุมาศ ก่อนจะเกิดเหตุกบฏครั้งใหญ่ของคงคาประลัย',
+              'เหตุการณ์ครั้งนี้บีบให้ทั้งสองพระองค์ต้องเสด็จลี้ภัยออกจากพระราชวังเข้าสู่ผืนป่าใหญ่'
+            ]
+          },
+          {
+            btnLabel: 'ดูข้อมูลท้าวอินณุมาศ & นางจันทรแก้วกัลยาณี',
+            badge: 'ตัวละคร · พระบิดาและพระมารดา',
+            title: 'ท้าวอินณุมาศและนางจันทรแก้วกัลยาณี',
+            paragraphs: [
+              'พระราชาและพระมเหสีแห่งเมืองโกญจา ผู้ต้องละทิ้งราชบัลลังก์เพื่อรักษาพระชนม์ชีพ',
+              'การหลบหนีเข้าป่าครั้งนี้คือจุดเริ่มต้นของชะตากรรมที่ทำให้ครอบครัวต้องพลัดพรากจากกัน'
+            ]
+          }
+        ],
+        renderIllustration: (state) => {
+          const inForest = state.ch2ForestMode;
+          return `
+          <div class="relative rounded-xl overflow-hidden bg-slate-950">
+            <!-- สวิตช์จำลอง Transition ภาพเมืองเปลี่ยนเป็นป่า -->
+            <div class="absolute top-2.5 right-2.5 z-10 flex rounded-full bg-black/60 p-0.5 border border-white/15 text-[11px] font-display">
+              <button onclick="setChapterState('ch2ForestMode', false)" class="px-2.5 py-0.5 rounded-full transition ${!inForest ? 'bg-amber-400 text-slate-950 font-semibold' : 'text-slate-200'}">เมืองโกญจา</button>
+              <button onclick="setChapterState('ch2ForestMode', true)" class="px-2.5 py-0.5 rounded-full transition ${inForest ? 'bg-emerald-400 text-slate-950 font-semibold' : 'text-slate-200'}">เปลี่ยนเป็นป่า</button>
+            </div>
+
+            <svg viewBox="0 0 460 300" class="w-full h-auto block">
+              <rect width="460" height="300" fill="${inForest ? '#07241d' : '#261433'}" style="transition: fill 0.6s ease;" />
+              <!-- พระราชวังเมืองโกญจา -->
+              <g fill="#f59e0b" opacity="${inForest ? '0.22' : '0.88'}" style="transition: opacity 0.6s ease;">
+                <polygon points="115,58 103,115 127,115" />
+                <rect x="92" y="115" width="46" height="90" rx="2" />
+                <polygon points="72,96 63,135 81,135" />
+                <rect x="56" y="135" width="32" height="70" rx="2" />
+                <polygon points="158,96 149,135 167,135" />
+                <rect x="142" y="135" width="32" height="70" rx="2" />
+              </g>
+              <!-- แนวป่าที่ค่อยๆ ขยายเข้ามา -->
+              <path d="${inForest ? 'M0,185 Q140,125 280,175 T460,155 L460,300 L0,300 Z' : 'M220,215 Q310,150 390,195 T460,175 L460,300 L205,300 Z'}" fill="#064e3b" style="transition: all 0.6s ease;" />
+              <rect x="0" y="205" width="460" height="95" fill="${inForest ? '#052e24' : '#18122b'}" />
+              <!-- สองพระองค์ -->
+              <g transform="${inForest ? 'translate(290, 160)' : 'translate(215, 160)'}" style="transition: transform 0.6s ease;">
+                <circle cx="12" cy="10" r="6" fill="#fde68a" />
+                <path d="M6,18 L18,18 L21,44 L3,44 Z" fill="#fbbf24" />
+                <circle cx="32" cy="11" r="5.5" fill="#fbcfe8" />
+                <path d="M26,19 L38,19 L41,44 L23,44 Z" fill="#f472b6" />
+              </g>
+            </svg>
+            <button onclick="openNoteModal(0)" class="pin-pulse absolute left-[24%] top-[36%] -translate-x-1/2 px-2.5 py-1 rounded-full bg-amber-300 text-slate-950 font-display text-xs font-semibold shadow">
+              📍 เมืองโกญจา
+            </button>
+            <button onclick="openNoteModal(1)" class="pin-pulse absolute left-[56%] top-[62%] -translate-x-1/2 px-2.5 py-1 rounded-full bg-rose-300 text-slate-950 font-display text-xs font-semibold shadow">
+              👤 สองพระองค์
+            </button>
+          </div>
+        `;
+        }
+      },
+      {
+        chapter: 3,
+        enTitle: 'The Separation',
+        thTitle: 'การพลัดพราก',
+        moodTag: 'กลางป่าใหญ่และแสงเรืองรอง',
+        caption: 'นางจันทรแก้วกัลยาณีกับพระโอรสท่ามกลางป่า',
+        narrative: 'ต่อมานางจันทรให้กำเนิดพระโอรส แต่เด็กน้อยกลับถูกเทพจินดาพาตัวไปจากครอบครัว',
+        transition: 'แสงเรืองรองนำสายตาไปยังฉากถัดไป',
+        notes: [
+          {
+            btnLabel: 'อ่านเรื่องราวเพิ่มเติม',
+            badge: 'บันทึกเหตุการณ์ · การพลัดพราก',
+            title: 'การประสูติกลางป่าและการจากพราก',
+            paragraphs: [
+              'ท่ามกลางผืนป่าอันเงียบสงัด นางจันทรแก้วกัลยาณีได้ให้กำเนิดพระโอรสอันเป็นความหวังของทั้งสองพระองค์',
+              'ทว่าไม่นานนัก เทพจินดาได้พาพระโอรสน้อยไปจากอ้อมอกครอบครัว ท่ามกลางแสงเรืองรองที่นำพาดวงชะตาของเด็กน้อยไปสู่ครอบครัวใหม่ในป่าลึก'
+            ]
+          }
+        ],
+        renderIllustration: () => `
+          <div class="relative rounded-xl overflow-hidden bg-slate-950">
+            <svg viewBox="0 0 460 300" class="w-full h-auto block">
+              <defs>
+                <radialGradient id="ch3Glow" cx="72%" cy="40%" r="48%">
+                  <stop offset="0%" stop-color="#fef08a" stop-opacity="0.85" />
+                  <stop offset="60%" stop-color="#38bdf8" stop-opacity="0.2" />
+                  <stop offset="100%" stop-color="#082026" stop-opacity="0" />
+                </radialGradient>
+              </defs>
+              <rect width="460" height="300" fill="#082026" />
+              <circle cx="330" cy="120" r="140" fill="url(#ch3Glow)" />
+              <path d="M0,235 Q140,195 260,240 T460,220 L460,300 L0,300 Z" fill="#062c30" />
+              <!-- นางจันทรแก้วกัลยาณี -->
+              <g transform="translate(120, 155)">
+                <circle cx="15" cy="11" r="7.5" fill="#fbcfe8" />
+                <path d="M5,22 Q15,19 25,22 L31,66 L1,66 Z" fill="#f472b6" />
+              </g>
+              <!-- แสงนำสายตาไปสู่เทพจินดาและพระโอรส -->
+              <path d="M175,180 Q250,135 320,128" stroke="#fef08a" stroke-width="2.5" stroke-dasharray="5 5" fill="none" />
+              <g transform="translate(315, 102)">
+                <circle cx="14" cy="11" r="7" fill="#bae6fd" />
+                <path d="M5,21 L23,21 L27,56 L3,56 Z" fill="#38bdf8" />
+                <ellipse cx="14" cy="33" rx="8.5" ry="5.5" fill="#fef3c7" />
+              </g>
+            </svg>
+            <button onclick="openNoteModal(0)" class="pin-pulse absolute right-[15%] top-[35%] px-3 py-1 rounded-full bg-amber-300 text-slate-950 font-display text-xs font-semibold shadow-lg">
+              ✨ อ่านบันทึกเหตุการณ์
+            </button>
+          </div>
+        `
+      },
+      {
+        chapter: 4,
+        enTitle: 'A New Family',
+        thTitle: 'ครอบครัวใหม่',
+        moodTag: 'ที่พักกลางป่า · ความรักและความผูกพัน',
+        caption: 'พินทุมาร เทพจินดา และสิงหไกรภพในที่พักกลางป่า',
+        narrative: 'เด็กน้อยได้รับการเลี้ยงดูจากยักษ์ใจดีนามว่าพินทุมาร และเติบโตขึ้นมาท่ามกลางความรักและความผูกพัน',
+        transition: 'ภาพค่อย ๆ เปลี่ยนจากวัยเด็กเป็นวัยเติบโต',
+        notes: [
+          {
+            btnLabel: 'ประวัติพินทุมาร (ยักษ์ใจดี)',
+            badge: 'ตัวละคร · ผู้เลี้ยงดู',
+            title: 'พินทุมาร · ยักษ์ผู้มีหัวใจเมตตา',
+            paragraphs: [
+              'พินทุมารรับสิงหไกรภพมาเลี้ยงดูด้วยความรักและความเอ็นดูเสมือนบุตรแท้ ๆ ในที่พักกลางป่า',
+              'ความอบอุ่นและการอบรมสั่งสอนของพินทุมารทำให้สิงหไกรภพเติบโตขึ้นอย่างเข้มแข็งและมีจิตใจงดงาม'
+            ]
+          },
+          {
+            btnLabel: 'ประวัติเทพจินดา',
+            badge: 'ตัวละคร · ผู้ดูแล',
+            title: 'เทพจินดา · สายใยแห่งที่พักกลางป่า',
+            paragraphs: [
+              'ผู้พาเด็กน้อยมายังที่พักกลางป่าและคอยดูแลเคียงข้างร่วมกับพินทุมารตลอดช่วงวัยเยาว์'
+            ]
+          },
+          {
+            btnLabel: 'ประวัติสิงหไกรภพ (วัยเด็ก → วัยเติบโต)',
+            badge: 'ตัวละครเอก · การเติบโต',
+            title: 'สิงหไกรภพ · เติบโตท่ามกลางความผูกพัน',
+            paragraphs: [
+              'แม้จะเติบโตห่างจากพระบิดาและพระมารดาที่แท้จริง แต่สิงหไกรภพก็ได้รับความรักอย่างเต็มเปี่ยมจากพินทุมารและเทพจินดา',
+              'เมื่อย่างเข้าสู่วัยหนุ่ม ความอยากรู้ถึงชาติกำเนิดที่แท้จริงก็เริ่มผลิบานในหัวใจ'
+            ]
+          }
+        ],
+        renderIllustration: (state) => {
+          const grown = state.ch4Grown;
+          return `
+          <div class="relative rounded-xl overflow-hidden bg-slate-950">
+            <!-- สวิตช์เปลี่ยนวัยเด็ก -> วัยเติบโต -->
+            <div class="absolute top-2.5 left-1/2 -translate-x-1/2 z-10 flex rounded-full bg-black/65 p-0.5 border border-white/15 text-[11px] font-display">
+              <button onclick="setChapterState('ch4Grown', false)" class="px-2.5 py-0.5 rounded-full transition ${!grown ? 'bg-emerald-400 text-slate-950 font-semibold' : 'text-slate-200'}">วัยเด็ก</button>
+              <button onclick="setChapterState('ch4Grown', true)" class="px-2.5 py-0.5 rounded-full transition ${grown ? 'bg-amber-400 text-slate-950 font-semibold' : 'text-slate-200'}">วัยเติบโต</button>
+            </div>
+
+            <svg viewBox="0 0 460 300" class="w-full h-auto block">
+              <rect width="460" height="300" fill="#0d2618" />
+              <circle cx="230" cy="145" r="135" fill="#4ade80" opacity="0.12" />
+              <!-- ที่พักกลางป่า -->
+              <polygon points="230,48 95,118 365,118" fill="#453222" />
+              <rect x="120" y="118" width="220" height="122" fill="#2b1e15" opacity="0.85" />
+              <rect x="0" y="240" width="460" height="60" fill="#071a10" />
+
+              <!-- พินทุมาร -->
+              <g transform="translate(140, 128)">
+                <circle cx="22" cy="16" r="14" fill="#86efac" />
+                <path d="M4,34 Q22,29 40,34 L46,112 L-2,112 Z" fill="#16a34a" />
+              </g>
+              <!-- เทพจินดา -->
+              <g transform="translate(280, 146)">
+                <circle cx="15" cy="12" r="8.5" fill="#bae6fd" />
+                <path d="M4,23 L26,23 L30,94 L0,94 Z" fill="#0284c7" />
+              </g>
+              <!-- สิงหไกรภพ -->
+              <g transform="${grown ? 'translate(215, 142) scale(1)' : 'translate(219, 178) scale(0.68)'}" style="transition: all 0.55s ease;">
+                <circle cx="15" cy="12" r="9" fill="#fde68a" />
+                <path d="M4,23 L26,23 L30,98 L0,98 Z" fill="#f59e0b" />
+              </g>
+            </svg>
+
+            <button onclick="openNoteModal(0)" class="pin-pulse absolute left-[33%] top-[46%] -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-emerald-300 text-slate-950 font-display text-xs font-semibold shadow">
+              พินทุมาร
+            </button>
+            <button onclick="openNoteModal(2)" class="pin-pulse absolute left-[50%] top-[68%] -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-amber-300 text-slate-950 font-display text-xs font-semibold shadow">
+              สิงหไกรภพ
+            </button>
+            <button onclick="openNoteModal(1)" class="pin-pulse absolute left-[66%] top-[52%] -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-sky-300 text-slate-950 font-display text-xs font-semibold shadow">
+              เทพจินดา
+            </button>
+          </div>
+        `;
+        }
+      },
+      {
+        chapter: 5,
+        enTitle: 'The Journey',
+        thTitle: 'การออกเดินทาง',
+        moodTag: 'เส้นทางผจญภัยบนแผนที่',
+        caption: 'สิงหไกรภพเติบโตขึ้นและยืนอยู่บนเส้นทางผจญภัย',
+        narrative: 'เมื่อเติบโตขึ้น สิงหไกรภพเริ่มออกเดินทางเพื่อตามหาความจริงเกี่ยวกับชาติกำเนิดและครอบครัวของตนเอง',
+        transition: 'เลื่อนภาพตามเส้นทางการเดินทาง',
+        notes: [
+          {
+            btnLabel: 'จุดสำรวจที่ 1 · ที่พักกลางป่า',
+            badge: 'แผนที่เดินทาง · จุดเริ่มต้น',
+            title: 'ก้าวแรกออกจากที่พักกลางป่า',
+            paragraphs: [
+              'สิงหไกรภพตัดสินใจออกเดินทางจากอ้อมอกของพินทุมารและเทพจินดา เพื่อค้นหาคำตอบว่าแท้จริงแล้วตนเป็นใครและมาจากที่ใด'
+            ]
+          },
+          {
+            btnLabel: 'จุดสำรวจที่ 2 · หุบเขาและป่าหิมพานต์',
+            badge: 'แผนที่เดินทาง · ระหว่างทาง',
+            title: 'เส้นทางแห่งการเรียนรู้และผจญภัย',
+            paragraphs: [
+              'ระหว่างการเดินทาง สิงหไกรภพได้เผชิญกับภูมิประเทศอันกว้างใหญ่ เรียนรู้โลกภายนอก และสั่งสมประสบการณ์ที่หล่อหลอมหัวใจให้แกร่งกล้า'
+            ]
+          },
+          {
+            btnLabel: 'จุดสำรวจที่ 3 · ดินแดนของท้าวจตุพักตร์',
+            badge: 'แผนที่เดินทาง · จุดหมายถัดไป',
+            title: 'เส้นทางสู่การพบพานครั้งสำคัญ',
+            paragraphs: [
+              'เส้นทางการผจญภัยนำพาสิงหไกรภพเดินทางเข้าสู่ดินแดนแห่งใหม่ ที่ซึ่งโชคชะตาจะพาให้ได้พบกับนางสร้อยสุดา'
+            ]
+          }
+        ],
+        renderIllustration: () => `
+          <div class="relative rounded-xl overflow-hidden bg-slate-950">
+            <svg viewBox="0 0 460 300" class="w-full h-auto block">
+              <rect width="460" height="300" fill="#0d233a" />
+              <path d="M0,195 L100,115 L195,180 L310,98 L460,180 L460,300 L0,300 Z" fill="#173759" />
+              <path d="M0,238 Q150,200 300,240 T460,218 L460,300 L0,300 Z" fill="#0b1d30" />
+              <!-- เส้นทางแผนที่ -->
+              <path d="M78,232 Q175,165 245,192 T388,132" stroke="#fbbf24" stroke-width="3.5" stroke-dasharray="7 5" fill="none" />
+              <circle cx="78" cy="232" r="8" fill="#38bdf8" stroke="#fff" stroke-width="2" />
+              <circle cx="245" cy="192" r="8" fill="#38bdf8" stroke="#fff" stroke-width="2" />
+              <circle cx="388" cy="132" r="9" fill="#fbbf24" stroke="#fff" stroke-width="2" />
+            </svg>
+            <button onclick="openNoteModal(0)" class="pin-pulse absolute left-[17%] top-[74%] -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-sky-300 text-slate-950 font-display text-xs font-semibold shadow">
+              1. ป่าเริ่มต้น
+            </button>
+            <button onclick="openNoteModal(1)" class="pin-pulse absolute left-[53%] top-[61%] -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-sky-300 text-slate-950 font-display text-xs font-semibold shadow">
+              2. หุบเขาผจญภัย
+            </button>
+            <button onclick="openNoteModal(2)" class="pin-pulse absolute left-[82%] top-[41%] -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-amber-300 text-slate-950 font-display text-xs font-semibold shadow">
+              3. ดินแดนใหม่
+            </button>
+          </div>
+        `
+      },
+      {
+        chapter: 6,
+        enTitle: 'The Encounter',
+        thTitle: 'การพบกัน',
+        moodTag: 'บรรยากาศแฟนตาซีและสายใยรัก',
+        caption: 'สิงหไกรภพพบกับนางสร้อยสุดาในบรรยากาศแฟนตาซี',
+        narrative: 'ระหว่างการเดินทาง สิงหไกรภพได้พบกับนางสร้อยสุดา ธิดาของท้าวจตุพักตร์ ทั้งสองเกิดความรักและผูกพันต่อกัน',
+        transition: 'บรรยากาศเปลี่ยนเป็นโทนเข้มขึ้น',
+        notes: [
+          {
+            btnLabel: 'ดูข้อมูลนางสร้อยสุดาและความสัมพันธ์',
+            badge: 'ตัวละครและความสัมพันธ์',
+            title: 'นางสร้อยสุดา · ธิดาแห่งท้าวจตุพักตร์',
+            paragraphs: [
+              'นางสร้อยสุดาเป็นพระธิดาของท้าวจตุพักตร์ ผู้มีจิตใจงดงามและมั่นคงในความรัก',
+              'เมื่อได้พบกับสิงหไกรภพระหว่างการเดินทาง ทั้งสองต่างเกิดความรักและความผูกพันลึกซึ้งต่อกัน แม้จะมีฐานะและอุปสรรคขวางกั้นอยู่เบื้องหน้าก็ตาม'
+            ]
+          }
+        ],
+        renderIllustration: (state) => {
+          const darkShift = state.ch6DarkTone;
+          return `
+          <div class="relative rounded-xl overflow-hidden bg-slate-950">
+            <!-- สวิตช์จำลอง Transition บรรยากาศเปลี่ยนเป็นโทนเข้มขึ้น -->
+            <div class="absolute top-2.5 right-2.5 z-10 flex rounded-full bg-black/60 p-0.5 border border-white/15 text-[11px] font-display">
+              <button onclick="setChapterState('ch6DarkTone', false)" class="px-2.5 py-0.5 rounded-full transition ${!darkShift ? 'bg-pink-300 text-slate-950 font-semibold' : 'text-slate-200'}">แรกพบ</button>
+              <button onclick="setChapterState('ch6DarkTone', true)" class="px-2.5 py-0.5 rounded-full transition ${darkShift ? 'bg-rose-500 text-white font-semibold' : 'text-slate-200'}">โทนเข้มขึ้น</button>
+            </div>
+
+            <svg viewBox="0 0 460 300" class="w-full h-auto block">
+              <rect width="460" height="300" fill="${darkShift ? '#160917' : '#26112e'}" style="transition: fill 0.6s ease;" />
+              <circle cx="230" cy="145" r="130" fill="${darkShift ? '#be123c' : '#f472b6'}" opacity="${darkShift ? '0.22' : '0.35'}" style="transition: all 0.6s ease;" />
+              <path d="M0,235 Q230,198 460,235 L460,300 L0,300 Z" fill="#14091c" />
+              <!-- สิงหไกรภพ -->
+              <g transform="translate(175, 140)">
+                <circle cx="15" cy="12" r="8.5" fill="#fde68a" />
+                <path d="M4,23 L26,23 L30,95 L0,95 Z" fill="#f59e0b" />
+              </g>
+              <!-- นางสร้อยสุดา -->
+              <g transform="translate(252, 144)">
+                <circle cx="15" cy="12" r="8" fill="#fbcfe8" />
+                <path d="M4,23 L26,23 L32,91 L-2,91 Z" fill="#ec4899" />
+              </g>
+              <path d="M206,166 Q230,144 254,166" stroke="#f9a8d4" stroke-width="2.5" fill="none" />
+            </svg>
+            <button onclick="openNoteModal(0)" class="pin-pulse absolute left-1/2 top-[48%] -translate-x-1/2 px-3 py-1 rounded-full bg-pink-300 text-slate-950 font-display text-xs font-semibold shadow-lg">
+              ♥ นางสร้อยสุดา & ความรัก
+            </button>
+          </div>
+        `;
+        }
+      },
+      {
+        chapter: 7,
+        enTitle: 'The Obstacles',
+        thTitle: 'อุปสรรคระหว่างทาง',
+        moodTag: 'โทนเข้ม · อำนาจของท้าวจตุพักตร์',
+        caption: 'สิงหไกรภพเผชิญหน้ากับอุปสรรคและอำนาจของท้าวจตุพักตร์',
+        narrative: 'แต่ความรักของทั้งสองต้องพบกับอุปสรรค เมื่อท้าวจตุพักตร์ไม่เห็นด้วยและพยายามขัดขวางความสัมพันธ์ของทั้งคู่',
+        transition: 'ใช้แสงและการเคลื่อนไหวเพื่อเปลี่ยนอารมณ์สู่ฉากคลี่คลาย',
+        nextBtnLabel: 'ติดตามเรื่องราวต่อ',
+        triggerFlareOnNext: true,
+        notes: [
+          {
+            btnLabel: 'อ่านบันทึกเหตุการณ์ขัดขวางของท้าวจตุพักตร์',
+            badge: 'ปมขัดแย้ง · อุปสรรคแห่งรัก',
+            title: 'บททดสอบจากท้าวจตุพักตร์',
+            paragraphs: [
+              'ท้าวจตุพักตร์ไม่ยอมรับความสัมพันธ์ระหว่างสิงหไกรภพกับนางสร้อยสุดา จึงใช้อำนาจขัดขวางและสร้างอุปสรรคต่าง ๆ',
+              'แต่ความรักและความกล้าหาญทำให้สิงหไกรภพไม่ยอมแพ้ พร้อมฝ่าฟันทุกบททดสอบเพื่อพิสูจน์ความจริงใจ'
+            ]
+          }
+        ],
+        renderIllustration: () => `
+          <div class="relative rounded-xl overflow-hidden bg-slate-950">
+            <svg viewBox="0 0 460 300" class="w-full h-auto block">
+              <rect width="460" height="300" fill="#17070c" />
+              <circle cx="330" cy="125" r="125" fill="#dc2626" opacity="0.22" />
+              <rect x="0" y="242" width="460" height="58" fill="#0b0305" />
+              <!-- สิงหไกรภพ -->
+              <g transform="translate(118, 150)">
+                <circle cx="15" cy="12" r="8.5" fill="#fde68a" />
+                <path d="M4,23 L26,23 L30,92 L0,92 Z" fill="#f59e0b" />
+              </g>
+              <!-- ท้าวจตุพักตร์ -->
+              <g transform="translate(285, 88)">
+                <polygon points="32,0 18,22 46,22" fill="#ef4444" />
+                <circle cx="32" cy="36" r="16" fill="#991b1b" />
+                <path d="M4,58 Q32,50 60,58 L70,154 L-6,154 Z" fill="#7f1d1d" />
+              </g>
+              <path d="M215,118 L235,148 L220,158 L242,195" stroke="#fca5a5" stroke-width="2.5" fill="none" />
+            </svg>
+            <button onclick="openNoteModal(0)" class="pin-pulse absolute right-[18%] top-[34%] px-3 py-1 rounded-full bg-rose-400 text-slate-950 font-display text-xs font-semibold shadow-lg">
+              ⚡ อุปสรรคท้าวจตุพักตร์
+            </button>
+          </div>
+        `
+      },
+      {
+        chapter: 8,
+        enTitle: 'The Reunion',
+        thTitle: 'การกลับมาพบกัน',
+        moodTag: 'คลี่คลายสว่างไสว · พร้อมหน้าครอบครัว',
+        caption: 'สิงหไกรภพกลับมาพบครอบครัวและนางสร้อยสุดา',
+        narrative: 'หลังจากผ่านอุปสรรคมากมาย สิงหไกรภพสามารถเอาชนะศัตรู กลับไปพบพ่อแม่ และได้ครองรักกับนางสร้อยสุดาอย่างมีความสุข',
+        transition: 'ภาพค่อย ๆ สว่างขึ้นและเข้าสู่หน้าสรุป',
+        notes: [
+          {
+            btnLabel: 'ดูบทสรุปของสิงหไกรภพและนางสร้อยสุดา',
+            badge: 'บทสรุป · คู่ครอง',
+            title: 'สิงหไกรภพและนางสร้อยสุดา',
+            paragraphs: [
+              'หลังจากเอาชนะศัตรูและผ่านพ้นอุปสรรคทั้งหมด สิงหไกรภพและนางสร้อยสุดาได้ครองรักกันอย่างมีความสุข สมดังความตั้งใจที่มั่นคงตลอดมา'
+            ]
+          },
+          {
+            btnLabel: 'ดูบทสรุปของครอบครัวและพินทุมาร',
+            badge: 'บทสรุป · สายใยครอบครัว',
+            title: 'การกลับมาพบกันอย่างพร้อมหน้า',
+            paragraphs: [
+              'สิงหไกรภพได้กลับไปพบท้าวอินณุมาศและนางจันทรแก้วกัลยาณี พระบิดาและพระมารดาที่แท้จริง รวมถึงยังคงระลึกถึงพระคุณและความผูกพันที่มีต่อพินทุมารและเทพจินดาเสมอ'
+            ]
+          }
+        ],
+        renderIllustration: () => `
+          <div class="relative rounded-xl overflow-hidden bg-slate-950">
+            <svg viewBox="0 0 460 300" class="w-full h-auto block">
+              <defs>
+                <radialGradient id="ch8Glow" cx="50%" cy="38%" r="55%">
+                  <stop offset="0%" stop-color="#fef3c7" stop-opacity="0.75" />
+                  <stop offset="60%" stop-color="#38bdf8" stop-opacity="0.22" />
+                  <stop offset="100%" stop-color="#11263a" stop-opacity="0" />
+                </radialGradient>
+              </defs>
+              <rect width="460" height="300" fill="#132a40" />
+              <circle cx="230" cy="125" r="155" fill="url(#ch8Glow)" />
+              <rect x="0" y="232" width="460" height="68" fill="#0c1c2b" />
+              <!-- พ่อแม่ -->
+              <g transform="translate(105, 148)">
+                <circle cx="13" cy="10" r="7.5" fill="#fde68a" />
+                <path d="M4,20 L22,20 L25,84 L1,84 Z" fill="#eab308" />
+                <circle cx="38" cy="11" r="7" fill="#fbcfe8" />
+                <path d="M29,20 L47,20 L50,84 L26,84 Z" fill="#f472b6" />
+              </g>
+              <!-- สิงหไกรภพ & นางสร้อยสุดา -->
+              <g transform="translate(198, 138)">
+                <circle cx="15" cy="11" r="8.5" fill="#fde68a" />
+                <path d="M4,22 L26,22 L30,94 L0,94 Z" fill="#f59e0b" />
+                <circle cx="44" cy="13" r="8" fill="#fbcfe8" />
+                <path d="M33,23 L55,23 L59,94 L29,94 Z" fill="#ec4899" />
+              </g>
+              <!-- พินทุมาร -->
+              <g transform="translate(310, 126)">
+                <circle cx="18" cy="14" r="11" fill="#86efac" />
+                <path d="M3,30 L33,30 L38,106 L-2,106 Z" fill="#22c55e" />
+              </g>
+            </svg>
+            <button onclick="openNoteModal(0)" class="pin-pulse absolute left-[46%] top-[34%] -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-amber-300 text-slate-950 font-display text-xs font-semibold shadow">
+              ★ บทสรุปคู่รัก
+            </button>
+            <button onclick="openNoteModal(1)" class="pin-pulse absolute left-[72%] top-[38%] -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-emerald-300 text-slate-950 font-display text-xs font-semibold shadow">
+              ★ บทสรุปครอบครัว
+            </button>
+          </div>
+        `
+      },
+      {
+        chapter: 9,
+        enTitle: 'The Meaning',
+        thTitle: 'ความหมายของการเดินทาง',
+        moodTag: 'แสงสีทองแห่งบทสรุป',
+        caption: 'สิงหไกรภพยืนมองเส้นทางที่เดินผ่านมา พร้อมแสงสีทอง',
+        narrative: 'การเดินทางไม่ได้ทำให้เราเพียงค้นพบความจริง แต่ยังทำให้เราเรียนรู้ถึงความรัก ความผูกพัน และความหมายของครอบครัว',
+        transition: 'จบบริบูรณ์ · เลือกอ่านอีกครั้งหรือกลับสู่หน้าหลัก',
+        isLastChapter: true,
+        notes: [
+          {
+            btnLabel: 'อ่านข้อคิดส่งท้ายเล่ม',
+            badge: 'บทส่งท้าย · ข้อคิดของเรื่อง',
+            title: 'ความหมายที่แท้จริงของการเดินทาง',
+            paragraphs: [
+              'ตลอดการผจญภัยของสิงหไกรภพ สิ่งที่ล้ำค่าไม่แพ้การค้นพบชาติกำเนิดที่แท้จริง คือความรักและการเลี้ยงดูจากพินทุมารและเทพจินดา รวมถึงรักแท้ที่มีต่อนางสร้อยสุดา',
+              'ทุกก้าวที่เดินผ่านมาล้วนหล่อหลอมให้เข้าใจความหมายของคำว่า “ครอบครัว” อย่างลึกซึ้ง'
+            ]
+          }
+        ],
+        renderIllustration: () => `
+          <div class="relative rounded-xl overflow-hidden bg-slate-950">
+            <svg viewBox="0 0 460 300" class="w-full h-auto block">
+              <defs>
+                <radialGradient id="ch9Gold" cx="50%" cy="36%" r="58%">
+                  <stop offset="0%" stop-color="#fef3c7" stop-opacity="0.95" />
+                  <stop offset="48%" stop-color="#f59e0b" stop-opacity="0.45" />
+                  <stop offset="100%" stop-color="#291d0c" stop-opacity="0" />
+                </radialGradient>
+              </defs>
+              <rect width="460" height="300" fill="#261909" />
+              <circle cx="230" cy="115" r="165" fill="url(#ch9Gold)" />
+              <circle cx="230" cy="110" r="48" fill="#fef3c7" />
+              <path d="M0,208 Q140,165 260,202 T460,185 L460,300 L0,300 Z" fill="#3d280e" />
+              <path d="M216,222 Q230,260 165,300 L295,300 Q244,260 240,222 Z" fill="#fbbf24" opacity="0.45" />
+              <!-- สิงหไกรภพยืนมองเส้นทางที่ผ่านมา -->
+              <g transform="translate(216, 155)">
+                <circle cx="14" cy="10" r="7" fill="#1c1206" />
+                <path d="M7,19 L21,19 L24,50 L18,72 L14,72 L14,52 L10,72 L6,72 L6,50 Z" fill="#1c1206" />
+                <path d="M9,21 Q-6,36 -10,54 Q2,48 11,42 Z" fill="#fef08a" opacity="0.9" />
+              </g>
+            </svg>
+            <button onclick="openNoteModal(0)" class="pin-pulse absolute left-1/2 top-[35%] -translate-x-1/2 px-3 py-1 rounded-full bg-amber-300 text-slate-950 font-display text-xs font-semibold shadow-lg">
+              ✦ ข้อคิดส่งท้าย
+            </button>
+          </div>
+        `
+      }
+    ];
+
+    // =========================================================================
+    // สถานะและการควบคุมการพลิกหน้าหนังสือ
+    // =========================================================================
+    let currentChapter = 0; // 0 = หน้าปกหนังสือ, 1..9 = บทที่ 1..9
+    const interactiveState = {
+      ch2ForestMode: false,
+      ch4Grown: false,
+      ch6DarkTone: false
+    };
+
+
+    // ภาพประกอบจริง + จุดกด Hotspot (คงปุ่มโต้ตอบไว้บนภาพ)
+    const chapterArt = [
+      'assets/scene-01.png', 'assets/scene-02.png', 'assets/scene-03.png',
+      'assets/scene-04.png', 'assets/scene-05.png', 'assets/scene-06.png',
+      'assets/scene-07.png', 'assets/scene-08.png', 'assets/scene-09.png'
+    ];
+    function renderChapterIllustration(data, state) {
+      const frame = document.getElementById('book-illustration-frame');
+      frame.innerHTML = data.renderIllustration(state);
+      const shell = frame.firstElementChild;
+      if (!shell) return;
+      shell.classList.add('chapter-art-shell');
+      const art = document.createElement('img');
+      art.src = chapterArt[data.chapter - 1];
+      art.alt = data.caption || data.thTitle;
+      art.className = 'chapter-art-photo';
+      art.loading = 'lazy';
+      shell.insertBefore(art, shell.firstChild);
+      shell.querySelectorAll('button').forEach(btn => btn.style.zIndex = '2');
+    }
+
+    function goToPage(chapterNum, direction = 'next') {
+      if (chapterNum < 0 || chapterNum > bookChapters.length) return;
+
+      closeNoteModal();
+      toggleTocModal(false);
+
+      // เอฟเฟกต์แสงคลี่คลายอารมณ์เมื่อเปลี่ยนจากบทที่ 7 -> 8
+      if (currentChapter === 7 && chapterNum === 8) {
+        const flare = document.getElementById('book-flare-layer');
+        flare.classList.remove('hidden', 'page-flare');
+        void flare.offsetWidth;
+        flare.classList.add('page-flare');
+        setTimeout(() => flare.classList.add('hidden'), 1100);
+      }
+
+      currentChapter = chapterNum;
+
+      const coverView = document.getElementById('book-cover-view');
+      const openBookView = document.getElementById('open-book-view');
+      const headerStatus = document.getElementById('header-chapter-status');
+
+      if (chapterNum === 0) {
+        coverView.classList.remove('hidden');
+        openBookView.classList.add('hidden');
+        headerStatus.textContent = 'หน้าปกหนังสือ';
+        return;
+      }
+
+      const data = bookChapters[chapterNum - 1];
+      coverView.classList.add('hidden');
+      openBookView.classList.remove('hidden');
+
+      // แอนิเมชันพลิกหน้ากระดาษซ้าย/ขวา
+      const spread = document.getElementById('book-spread-container');
+      spread.classList.remove('animate-flip-next', 'animate-flip-prev');
+      void spread.offsetWidth;
+      spread.classList.add(direction === 'prev' ? 'animate-flip-prev' : 'animate-flip-next');
+
+      // อัปเดตสถานะบน Header
+      headerStatus.textContent = `บทที่ 0${data.chapter} / 09 · ${data.thTitle}`;
+
+      // อัปเดตหน้าซ้าย (ภาพประกอบและเลขหน้าคู่ฝั่งซ้าย)
+      const leftPageNum = chapterNum * 2 - 1;
+      const rightPageNum = chapterNum * 2;
+      document.getElementById('left-page-mood-tag').textContent = data.moodTag;
+      renderChapterIllustration(data, interactiveState);
+      document.getElementById('illustration-caption').textContent = data.caption;
+      document.getElementById('left-page-number').textContent = `หน้า ${leftPageNum}`;
+
+      // ปุ่มย้อนกลับหน้าซ้าย
+      const prevBtn = document.getElementById('prev-page-btn');
+      prevBtn.innerHTML = chapterNum === 1
+        ? '<span>← ปิดปกหนังสือ</span>'
+        : '<span>← พลิกกลับหน้าก่อน</span>';
+
+      // อัปเดตหน้าขวา (เนื้อเรื่อง เกร็ดบันทึก และเลขหน้าคู่ฝั่งขวา)
+      document.getElementById('right-page-chapter-code').textContent = `บทที่ 0${data.chapter} · SCENE 0${data.chapter}`;
+      document.getElementById('right-page-en-title').textContent = data.enTitle;
+      document.getElementById('right-page-th-title').textContent = data.thTitle;
+      document.getElementById('right-page-narrative').textContent = data.narrative;
+      document.getElementById('right-page-transition').textContent = `การเปลี่ยนฉาก: ${data.transition}`;
+      document.getElementById('right-page-number').textContent = `หน้า ${rightPageNum}`;
+
+      // สร้างปุ่มเปิดอ่านบันทึกเพิ่มเติมในหน้าขวา
+      const notesContainer = document.getElementById('right-page-interactions');
+      notesContainer.innerHTML = data.notes.map((note, idx) => `
+        <button onclick="openNoteModal(${idx})" class="w-full px-3.5 py-2.5 rounded-xl border text-left font-display text-xs sm:text-sm flex items-center justify-between gap-2 bg-amber-500/10 hover:bg-amber-500/20 transition" style="border-color: var(--paper-border);">
+          <span class="flex items-center gap-2 font-medium">
+            <span class="text-amber-700 dark:text-amber-300">🔖</span>
+            <span>${note.btnLabel}</span>
+          </span>
+          <span class="text-[11px] opacity-75">เปิดอ่าน →</span>
+        </button>
+      `).join('');
+
+      // ปุ่มพลิกหน้าถัดไป (หรือปุ่มจบเล่มในบทที่ 9)
+      const nextArea = document.getElementById('right-page-next-area');
+      if (data.isLastChapter) {
+        nextArea.innerHTML = `
+          <button onclick="goToPage(1, 'prev')" class="px-3.5 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-600 text-amber-50 font-medium transition">
+            อ่านอีกครั้ง
+          </button>
+          <button onclick="goToPage(0, 'prev')" class="px-3.5 py-1.5 rounded-lg border border-amber-800/30 hover:bg-amber-900/10 font-medium transition">
+            กลับสู่หน้าหลัก
+          </button>
+        `;
+      } else {
+        const nextLabel = data.nextBtnLabel || 'พลิกไปหน้าถัดไป';
+        nextArea.innerHTML = `
+          <button onclick="nextPage()" class="px-4 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-600 text-amber-50 font-medium shadow-xs transition flex items-center gap-1.5">
+            <span>${nextLabel}</span>
+            <span>→</span>
+          </button>
+        `;
+      }
+
+      // อัปเดตแถบตัวเลขบทด้านล่าง
+      renderBottomPagePills();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function nextPage() {
+      if (currentChapter < bookChapters.length) {
+        goToPage(currentChapter + 1, 'next');
+      }
+    }
+
+    function prevPage() {
+      if (currentChapter > 0) {
+        goToPage(currentChapter - 1, 'prev');
+      }
+    }
+
+    function setChapterState(key, value) {
+      interactiveState[key] = value;
+      if (currentChapter > 0) {
+        const data = bookChapters[currentChapter - 1];
+        renderChapterIllustration(data, interactiveState);
+      }
+    }
+
+    function renderBottomPagePills() {
+      const container = document.getElementById('bottom-page-pills');
+      container.innerHTML = bookChapters.map((ch) => {
+        const active = ch.chapter === currentChapter;
+        return `
+          <button onclick="goToPage(${ch.chapter}, '${ch.chapter >= currentChapter ? 'next' : 'prev'}')" class="w-7 h-7 rounded-md text-xs font-display transition ${active ? 'bg-amber-400 text-slate-950 font-bold shadow' : 'bg-white/10 text-amber-100/80 hover:bg-white/20'}">
+            ${ch.chapter}
+          </button>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // จัดการ Pop-up บันทึกแทรกในหนังสือ & สารบัญบท
+    // =========================================================================
+    function openNoteModal(noteIdx) {
+      if (currentChapter < 1) return;
+      const data = bookChapters[currentChapter - 1];
+      const note = data.notes[noteIdx];
+      if (!note) return;
+
+      document.getElementById('note-modal-badge').textContent = note.badge;
+      document.getElementById('note-modal-title').textContent = note.title;
+      document.getElementById('note-modal-body').innerHTML = note.paragraphs
+        .map((p) => `<p>${p}</p>`)
+        .join('');
+
+      const tabs = document.getElementById('note-modal-tabs');
+      if (data.notes.length > 1) {
+        tabs.classList.remove('hidden');
+        tabs.innerHTML = data.notes.map((item, idx) => `
+          <button onclick="openNoteModal(${idx})" class="px-3 py-1 rounded-lg text-xs font-display border transition ${idx === noteIdx ? 'bg-amber-700 text-amber-50 border-amber-700' : 'bg-amber-500/10 border-amber-700/25 hover:bg-amber-500/20'}">
+            ${item.btnLabel}
+          </button>
+        `).join('');
+      } else {
+        tabs.classList.add('hidden');
+      }
+
+      const modal = document.getElementById('note-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeNoteModal() {
+      const modal = document.getElementById('note-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function toggleTocModal(show) {
+      const modal = document.getElementById('toc-modal');
+      if (!show) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        return;
+      }
+
+      const grid = document.getElementById('toc-grid');
+      const coverCard = `
+        <button onclick="goToPage(0, 'prev')" class="p-3 rounded-xl border text-left transition flex items-center gap-3 ${currentChapter === 0 ? 'bg-amber-500/20 border-amber-600' : 'bg-amber-500/5 border-amber-800/20 hover:bg-amber-500/15'}">
+          <span class="px-2 py-1 rounded-md bg-amber-700 text-amber-50 font-display text-xs font-semibold">ปก</span>
+          <div>
+            <p class="font-serif-thai font-bold text-sm">หน้าปกหนังสือ</p>
+            <p class="text-xs opacity-75">โลกของสิงหไกรภพ</p>
+          </div>
+        </button>
+      `;
+
+      const chapterCards = bookChapters.map((ch) => `
+        <button onclick="goToPage(${ch.chapter}, '${ch.chapter >= currentChapter ? 'next' : 'prev'}')" class="p-3 rounded-xl border text-left transition flex items-center justify-between gap-2 ${currentChapter === ch.chapter ? 'bg-amber-500/20 border-amber-600' : 'bg-amber-500/5 border-amber-800/20 hover:bg-amber-500/15'}">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-md bg-amber-700/15 text-amber-800 dark:text-amber-300 font-display text-xs font-bold flex items-center justify-center shrink-0">0${ch.chapter}</span>
+            <div>
+              <p class="font-serif-thai font-bold text-sm">${ch.thTitle}</p>
+              <p class="text-[11px] font-display opacity-75">${ch.enTitle}</p>
+            </div>
+          </div>
+          <span class="text-[11px] font-serif-thai opacity-70 shrink-0">หน้า ${ch.chapter * 2 - 1}–${ch.chapter * 2}</span>
+        </button>
+      `).join('');
+
+      grid.innerHTML = coverCard + chapterCards;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    // สลับโหมดกระดาษถนอมสายตา / โหมดกลางคืน
+    function toggleReadingTheme() {
+      const isNight = document.body.classList.toggle('night-mode');
+      document.getElementById('theme-icon').textContent = isNight ? '📖' : '🌙';
+      document.getElementById('theme-label').textContent = isNight ? 'กระดาษถนอมสายตา' : 'โหมดกลางคืน';
+    }
+
+    // รองรับปุ่มลูกศรซ้าย-ขวาบนคีย์บอร์ดเพื่อพลิกหน้าหนังสือ
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeNoteModal();
+        toggleTocModal(false);
+      } else if (e.key === 'ArrowRight') {
+        nextPage();
+      } else if (e.key === 'ArrowLeft') {
+        prevPage();
+      }
+    });
+
+    document.getElementById('note-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'note-modal') closeNoteModal();
+    });
+    document.getElementById('toc-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'toc-modal') toggleTocModal(false);
+    });
+
+    window.onload = function () {
+      goToPage(0);
+    };
+  </script>
+</body>
+</html>
